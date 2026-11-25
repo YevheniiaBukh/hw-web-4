@@ -1,1 +1,12 @@
-{}
+[
+    {
+        "username": "Yevhenia",
+        "message": "Hello! My test message.",
+        "timestamp": "2026-11-25 12:31:12"
+    },
+    {
+        "username": "Ruslan",
+        "message": "Hello everybody.",
+        "timestamp": "2026-11-25 12:51:32"
+    }
+]
