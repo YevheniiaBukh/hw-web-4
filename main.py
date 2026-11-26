@@ -23,23 +23,22 @@ def socket_server():
     
     
     while True:
-        data = server.recvfrom(1024)
+        data, address = server.recvfrom(1024)
         message = json.loads(data.decode("utf-8"))
-        message_dict = json.loads(message)
         
-        datetime = str(datetime.now())
+        datestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         with open(DATA_FILE, "r", encoding="utf-8") as file:
             messages = json.load(file)
             
     
-        messages[datetime] = message_dict
+        messages[datestamp] = message
         
         
         with open(DATA_FILE, "w", encoding="utf-8") as file:
             json.dump(messages, file, ensure_ascii=False, indent=4)
             
-        print(f"Отримано повідомлення: {message_dict}")
+        print(f"Отримано повідомлення: {message}")
  
         
 class MyHandler(BaseHTTPRequestHandler):
@@ -47,23 +46,27 @@ class MyHandler(BaseHTTPRequestHandler):
         if self.path == "/":
             self.path = "/index.html"
             
+            
         if self.path in ["/index.html", "/message.html", "/error.html"]:
             file_path = TEMPLATE_DIR / self.path.lstrip("/")
             content_type = "text/html"
+            status = 200
             
         elif self.path in ["/style.css", "/logo.png"]:
             file_path = STATIC_DIR / self.path.lstrip("/")
             content_type, _ = mimetypes.guess_type(str(file_path))
+            status = 200
             
         else:
             file_path = TEMPLATE_DIR / "error.html"
             content_type = "text/html"
+            status = 404
             
         with open(file_path, "rb") as file:
             content = file.read()
             
         
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-type", content_type or "text/html")
         self.end_headers()   
         self.wfile.write(content)
@@ -80,23 +83,17 @@ class MyHandler(BaseHTTPRequestHandler):
             username = parsed_data.get("username", [""])[0]
             message = parsed_data.get("message", [""])[0]
             
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
             
             new_message = {
                 "username": username,
-                "message": message,
-                "timestamp": timestamp
+                "message": message
             }
-             
-            data_file = Path(__file__).parent / "storage" / "data.json"
             
-            with open(data_file, "r", encoding="utf-8") as file:
-                messages = json.load(file)
+            upd_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            upd_socket.sendto(json.dumps(new_message).encode("utf-8"), ("localhost", 5000))
+            upd_socket.close() 
 
-            messages.append(new_message)
-
-            with open(data_file, "w", encoding="utf-8") as file:
-                json.dump(messages, file, ensure_ascii=False, indent=4)
 
             print(f"Отримано повідомлення: {new_message}")
             
